@@ -6,7 +6,8 @@
 # secrets and nothing about clients. Safe to run again: whatever is already done is skipped, and an existing copy is
 # only updated when it's on main with nothing changed.
 #   $env:TESSA_DIR = '<folder>'   put the copy somewhere else (set it before the line)
-#   $env:TESSA_INSTALL_CI = '1'   a test run: stops after the copy, before anything is installed in it
+#   $env:TESSA_INSTALL_CI = '1'   a test run: stops after the copy, before anything is installed in it (or before the
+#                                 GitHub sign-in when nobody is signed in, as on GitHub's own machines)
 
 # Continue, not Stop: Windows PowerShell 5.1 turns any stderr line of gh or git into a terminating error under Stop.
 # Each step checks its own result instead.
@@ -42,6 +43,7 @@ if (Test-Path $gh) { Ok 'already installed' } else {
 
 Step '3/4  Sign in to GitHub'
 & $gh auth status *> $null
+if ($LASTEXITCODE -ne 0 -and $env:TESSA_INSTALL_CI) { Write-Host '   Test run with nobody to sign in: stopping here.'; return }
 if ($LASTEXITCODE -eq 0) { Ok "signed in as $(& $gh api user --jq .login)" } else {
     Write-Host '   Press Enter, a browser tab opens: type the code shown below and click Authorize.'
     & $gh auth login --hostname github.com --git-protocol https --web
